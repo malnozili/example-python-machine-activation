@@ -30,6 +30,8 @@ def activate_license(license_key):
   # If the license is valid for the current machine, that means it has
   # already been activated. We can return early.
   if validation["meta"]["valid"]:
+    beats_check(license_key, machine_fingerprint)
+
     return True, "license has already been activated on this machine"
 
   # Otherwise, we need to determine why the current license is not valid,
@@ -68,6 +70,7 @@ def activate_license(license_key):
       }
     })
   ).json()
+  beats_check(license_key, activation["data"]["id"])
 
   # If we get back an error, our activation failed.
   if "errors" in activation:
@@ -78,6 +81,18 @@ def activate_license(license_key):
     )
 
   return True, "license activated"
+
+def beats_check(license_key, machine):
+    #is 10 minutes
+    #license policy's heartbeatDuration attribute
+    res = requests.post(
+    f"https://api.keygen.sh/v1/accounts/{os.environ['KEYGEN_ACCOUNT_ID']}/machines/{machine}/actions/ping",
+    headers={
+        "Accept": "application/vnd.api+json",
+      "Authorization": "License {}".format(license_key),
+    }
+    ).json()
+    print("beats_check body", res)
 
 # Run from the command line:
 #   python main.py some_license_key
